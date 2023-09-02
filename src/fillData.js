@@ -1,4 +1,4 @@
-import Client from 'https://cdn.jsdelivr.net/npm/@notionhq/client@2.2.13/+esm'
+import { Client } from '@notionhq/client'
 import { getTimes } from './home.js';
 
 const notion = new Client({ auth: process.env.API_KEY  });
