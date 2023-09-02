@@ -4,6 +4,12 @@
   "repository": {
     "url": "git+https://github.com/Instilt-Educate/Tutor-Timings.git"
   },
+  "eslintConfig": {
+    "env": {
+        "browser": true,
+        "node": true
+    }
+  },
   "private": true,
   "dependencies": {
     "@notionhq/client": "^2.2.12",
