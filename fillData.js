@@ -1,7 +1,5 @@
 import Client from 'https://cdn.jsdelivr.net/npm/@notionhq/client@2.2.13/+esm'
-
 import { getTimes } from './home.js';
-require('dotenv').config()
 
 const notion = new Client({ auth: process.env.API_KEY  });
 
