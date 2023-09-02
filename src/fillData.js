@@ -14,7 +14,6 @@ async function makePage(){
   const timeData = getTimes(name, email);
   
   console.log(timeData);
-  return;
 
   const response = await notion.pages.create({
     parent: {
@@ -25,7 +24,7 @@ async function makePage(){
         title: [
           {
             text: {
-              content: "Ayush R",
+              content: 'AYUSH TEST',
             },
           },
         ],
@@ -35,6 +34,10 @@ async function makePage(){
             {
               name: "10:00 AM - 11:00 AM",
             },
+            {
+              name: "11:00 AM - 12:00 PM",
+            }
+
           ],
         },
     },
