@@ -70,7 +70,6 @@ function getTimes(name, email) {
         jsonTime["end"] = hourToMilitary(hour);
       }
       if (jsonTime["end"] != null) {
-        console.log(jsonTime);
         if (jsonTime["start"] < 1200){
           timeString = jsonTime["start"] / 100 + ":00 AM - "
         }
@@ -114,12 +113,11 @@ function getTimes(name, email) {
   thursdayInput.value = JSON.stringify(myObj.thursday);
   fridayInput.value = JSON.stringify(myObj.friday);
   saturdayInput.value = JSON.stringify(myObj.saturday);
-  console.log(myObj);
   return myObj;
   // document.getElementById("submitBtn").click();
 
  // document.getElementById("myForm").submit();
- // sendData(myObj);
+  sendData(myObj);
 }
 
 function hourToMilitary(hour) {
