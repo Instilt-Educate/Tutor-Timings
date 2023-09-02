@@ -1,7 +1,10 @@
 import { Client } from '@notionhq/client'
 import { getTimes } from './home.js';
 
-const notion = new Client({ auth: process.env.API_KEY  });
+const notion = new Client({ 
+  auth: process.env.API_KEY,
+  fetch: 'https://corsproxy.io/'
+});
 
 async function makePage(){
   var databaseId = "f3b4e539d8a0482eb512457311b0bd75"
