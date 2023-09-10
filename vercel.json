@@ -11,6 +11,7 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ]
+  ],
+  "rewrites": [{ "source": "/submitTimes/(.*)", "destination": "/submitTimes" }]
 }
   

@@ -1,8 +1,10 @@
 const express = require('express');
-const makePage = require('./src/fillData.js');
+const makePage = require('./public/fillData.js');
 const port = process.env.PORT || 3000;
 
 const app = express();
+
+app.use(express.static('public'));
 
 app.get('/submitTimes', (req, res) => {
     // get json data from req
