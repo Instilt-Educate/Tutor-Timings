@@ -5,7 +5,7 @@
     "url": "git+https://github.com/Instilt-Educate/Tutor-Timings.git"
   },
   "engines": {
-    "node": "14.x"
+    "node": "18.x"
   },
   "private": true,
   "dependencies": {
