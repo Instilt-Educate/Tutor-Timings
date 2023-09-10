@@ -7,6 +7,8 @@
   "engines": {
     "node": "18.x"
   },
+  "homepage": ".",
+  "main": "server.js",
   "private": true,
   "dependencies": {
     "@notionhq/client": "^2.2.12",
