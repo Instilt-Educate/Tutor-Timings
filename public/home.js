@@ -147,6 +147,9 @@ async function getData(){
     body: JSON.stringify(getTimes())
   });
   const data = await res.json();
+  alert("Your availabilities have been submitted!")
+  // refresh page
+  window.location.reload();
 }
 
 
