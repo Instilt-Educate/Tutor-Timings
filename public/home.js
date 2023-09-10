@@ -61,10 +61,8 @@ function getTimes(name, email) {
     '08:00 PM - 09:00 PM', '09:00 PM - 10:00 PM', '10:00 PM - 11:00 PM', '11:00 PM - 12:00 AM'
   ];
 
-  // filter out empty arrays
-  parsedData = parsedData.filter((day) => day.some((hour) => hour));
   // Parses JSON data from schedule data
-  for (var day = 0; day < parsedData.length; day++) {
+  for (var day = 1; day < 8; day++) {
     var dayData = parsedData[day];
 
     var hourData = [];
@@ -73,7 +71,7 @@ function getTimes(name, email) {
         hourData.push(allTimes[i]);
       }
     }
-    myObj[getDay(day)] = hourData;
+    myObj[getDay(day - 1)] = hourData;
   }
 
   return myObj;
@@ -85,17 +83,11 @@ function hourToMilitary(hour) {
 }
 
 function getDay(num) {
-  if (num == 0) return "sunday";
-  if (num == 1) return "monday";
-  if (num == 2) return "tuesday";
-  if (num == 3) return "wednesday";
-  if (num == 4) return "thursday";
-  if (num == 5) return "friday";
-  if (num == 6) return "saturday";
+  // use an array and index
+  return ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][num];
 }
 
 async function getData(){
-  console.log(getTimes());
   const res = await fetch('https://tutor-timings.vercel.app/submitTimes', {
     method: 'POST',
     headers: {
