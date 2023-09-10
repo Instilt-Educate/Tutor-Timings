@@ -20,6 +20,12 @@ $(document).ready(function() {
 
 /* when the button is pressed, submit the person's availability to a google app scripts project */
 function getTimes(name, email) {
+  var name = document.getElementById("person-name").value;
+  var email = document.getElementById("person-email").value;
+  if (name == "" || email == "") {
+      alert("Please enter your name and email!");
+      return;
+  }
 
   var myObj = {
     name: name,
@@ -133,7 +139,7 @@ function getDay(num) {
 }
 
 async function getData(){
-  const res = await fetch('/submitTimes', {
+  const res = await fetch('http://localhost:3000/submitTimes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -141,7 +147,6 @@ async function getData(){
     body: JSON.stringify(getTimes())
   });
   const data = await res.json();
-  console.log(data);
 }
 
 

@@ -10,6 +10,7 @@
   "private": true,
   "dependencies": {
     "@notionhq/client": "^2.2.12",
+    "cors": "^2.8.5",
     "dangerous-html": "0.1.13",
     "dotenv": "^16.3.1",
     "dotenv-webpack": "^8.0.1",
