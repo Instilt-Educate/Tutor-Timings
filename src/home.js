@@ -1,9 +1,7 @@
-import { makePage } from './fillData.js';
-
 var script = document.createElement('script');
 document.getElementsByTagName('head')[0].appendChild(script);
 
-if(document.getElementById('submit') != null) {document.getElementById("submit").addEventListener("click", makePage);
+if(document.getElementById('submit') != null) {document.getElementById("submit").addEventListener("click", getData);
 }
 
 /*allow highlighting of each time-slot */
@@ -134,6 +132,19 @@ function getDay(num) {
   if (num == 6) return "saturday";
 }
 
+async function getData(){
+  const res = await fetch('/submitTimes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(getTimes())
+  });
+  const data = await res.json();
+  console.log(data);
+}
+
+
 /* READ
     sendData(data) takes in the *JSON object,
     and is sent to a google apps scripts project thats deployed as a web app via
@@ -179,5 +190,3 @@ function sendData(data){
         },
         })
 }
-
-export { getTimes };
