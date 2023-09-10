@@ -3,7 +3,6 @@ import { getTimes } from './home.js';
 
 const notion = new Client({ 
   auth: process.env.API_KEY,
-  fetch: 'https://corsproxy.io/'
 });
 
 async function makePage(){
