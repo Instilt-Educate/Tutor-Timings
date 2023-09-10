@@ -95,10 +95,12 @@ function getDay(num) {
 }
 
 async function getData(){
+  console.log(getTimes());
   const res = await fetch('https://tutor-timings.vercel.app/submitTimes', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
     body: JSON.stringify(getTimes())
   });
