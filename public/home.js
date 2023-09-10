@@ -139,7 +139,7 @@ function getDay(num) {
 }
 
 async function getData(){
-  const res = await fetch('http://localhost:3000/submitTimes', {
+  const res = await fetch('https://tutor-timings.vercel.app/submitTimes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
