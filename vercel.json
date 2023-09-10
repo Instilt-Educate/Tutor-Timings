@@ -6,6 +6,6 @@
       "use": "@vercel/node"
     }
   ],
-  "rewrites": [{ "source": "/submitTimes/(.*)", "destination": "/submitTimes" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "public/index.html" }]
 }
   
