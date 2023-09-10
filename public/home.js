@@ -73,7 +73,7 @@ function getTimes(name, email) {
         hourData.push(allTimes[i]);
       }
     }
-    myObj[getDay(day-1)] = hourData;
+    myObj[getDay(day)] = hourData;
   }
 
   return myObj;
