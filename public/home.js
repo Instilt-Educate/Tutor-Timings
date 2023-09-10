@@ -49,80 +49,36 @@ function getTimes(name, email) {
       column.push(color === highlightColor);
     }
     parsedData.push(column);
+    
   } //// END DATA PARSE
 
+  const allTimes = [
+    '12:00 AM - 01:00 AM', '01:00 AM - 02:00 AM', '02:00 AM - 03:00 AM', '03:00 AM - 04:00 AM',
+    '04:00 AM - 05:00 AM', '05:00 AM - 06:00 AM', '06:00 AM - 07:00 AM', '07:00 AM - 08:00 AM',
+    '08:00 AM - 09:00 AM', '09:00 AM - 10:00 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM', '03:00 PM - 04:00 PM',
+    '04:00 PM - 05:00 PM', '05:00 PM - 06:00 PM', '06:00 PM - 07:00 PM', '07:00 PM - 08:00 PM',
+    '08:00 PM - 09:00 PM', '09:00 PM - 10:00 PM', '10:00 PM - 11:00 PM', '11:00 PM - 12:00 AM'
+  ];
+
+  // filter out empty arrays
+  parsedData = parsedData.filter((day) => day.some((hour) => hour));
   // Parses JSON data from schedule data
-  var currSelected, prevSelected;
   for (var day = 0; day < parsedData.length; day++) {
     var dayData = parsedData[day];
-    var jsonHourData = []; // array of {start: hour , end: hour} objects: blocks of time in a day
 
-    var jsonTime = {};
-    var timeString = "";
-    for (var hour = 0; hour < dayData.length; hour++) {
-      currSelected = dayData[hour];
-      prevSelected = hour > 0 && dayData[hour - 1];
-
-      if (currSelected && prevSelected && hour == 23) {
-        jsonTime["end"] = hourToMilitary(hour + 1);
-      } else if (currSelected && !prevSelected) {
-        jsonTime["start"] = hourToMilitary(hour);
-        if (hour == 23) {
-          jsonTime["end"] = hourToMilitary(hour + 1);
-        }
-      } else if (!currSelected && prevSelected) {
-        jsonTime["end"] = hourToMilitary(hour);
-      }
-      if (jsonTime["end"] != null) {
-        if (jsonTime["start"] < 1200){
-          timeString = jsonTime["start"] / 100 + ":00 AM - "
-        }
-        else{
-          if (jsonTime["start"] / 100 == 12){
-            timeString = jsonTime["start"] / 100 + ":00 PM - "
-          }
-          else{
-            timeString = jsonTime["start"] / 100 - 12 + ":00 PM - "
-          }
-        }
-        if (jsonTime["end"] < 1200){
-          timeString += jsonTime["end"] / 100 + ":00 AM"
-        }
-        else{
-          if (jsonTime["end"] / 100 == 12){
-            timeString += jsonTime["end"] / 100 + ":00 PM"
-          }
-          else{
-            timeString += jsonTime["end"] / 100 - 12 + ":00 PM"
-          }
-        }
-        jsonHourData.push(timeString);
-        //jsonHourData.push(jsonTime);
-        jsonTime = {};
+    var hourData = [];
+    for (let i = 0; i < dayData.length; i++) {
+      if (dayData[i]) {
+        hourData.push(allTimes[i]);
       }
     }
-    myObj[getDay(day-1)] = jsonHourData;
+    myObj[getDay(day-1)] = hourData;
   }
-  const sundayInput = document.querySelector('input[name="Sunday"]');
-  const mondayInput = document.querySelector('input[name="Monday"]');
-  const tuesdayInput = document.querySelector('input[name="Tuesday"]');
-  const wednesdayInput = document.querySelector('input[name="Wednesday"]');
-  const thursdayInput = document.querySelector('input[name="Thursday"]');
-  const fridayInput = document.querySelector('input[name="Friday"]');
-  const saturdayInput = document.querySelector('input[name="Saturday"]');
-  sundayInput.value = JSON.stringify(myObj.sunday);
-  mondayInput.value = JSON.stringify(myObj.monday);
-  tuesdayInput.value = JSON.stringify(myObj.tuesday);
-  wednesdayInput.value = JSON.stringify(myObj.wednesday);
-  thursdayInput.value = JSON.stringify(myObj.thursday);
-  fridayInput.value = JSON.stringify(myObj.friday);
-  saturdayInput.value = JSON.stringify(myObj.saturday);
-  return myObj;
-  // document.getElementById("submitBtn").click();
 
- // document.getElementById("myForm").submit();
-  sendData(myObj);
+  return myObj;
 }
+
 
 function hourToMilitary(hour) {
   return hour * 100;
