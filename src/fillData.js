@@ -7,7 +7,7 @@ import { getTimes } from './home.js';
 
 async function makePage(){
   var databaseId = "f3b4e539d8a0482eb512457311b0bd75"
-  const NOTION_API_ENDPOINT = `https://cors.yasbr.com/https://api.notion.com/v1/databases/${databaseId}/pages`;
+  const NOTION_API_ENDPOINT = `https://cors-anywhere.herokuapp.com/https://api.notion.com/v1/databases/${databaseId}/pages`;
   const headers = new Headers({
     Authorization: `Bearer ${process.env.API_KEY}`,
     'Content-Type': 'application/json',
