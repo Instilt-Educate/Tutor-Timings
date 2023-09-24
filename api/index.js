@@ -23,7 +23,7 @@ const notion = new Client({
 });
 
 
-app.post('/getRecords', async (req, res) => {
+app.get('/getRecords', async (req, res) => {
   const DATABASE_ID = process.env.DATABASE_ID;
   let allRecords = [];
   let nextPageToken = undefined;
@@ -69,19 +69,17 @@ app.post('/getRecords', async (req, res) => {
         id: record.properties.ID.unique_id.number,
         name: record.properties.Name.title[0]?.plain_text || '',
         email: record.properties.Email.email || '',
-        position: record.properties.Position.multi_select.length > 0 ? record.properties.Position.multi_select[0].name: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor"),
+        position: record.properties.Position.multi_select.length > 0 ? record.properties.Position.multi_select[0].name: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor").replace("HR", "Human Resources"),
         team: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor"),
         location: record.properties.City.select != undefined ? record.properties.City.select.name + ', ' + record.properties.Country.select?.name : record.properties.Country.select?.name || '',
         image: record.properties.image.url || '',
+        image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/uc?export=view&id=") : '',
       }));
-
       formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
-      // console.log(formattedRecords);
-      // console.log("RETURNING NOW");
-      return formattedRecords;
+      res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
-      return [];
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
     }
 });
 
@@ -115,7 +113,6 @@ app.post('/submitTimes', async (req, res) => {
     });
 
     if (filterResponse.results.length > 0) {
-      console.log("PAGE EXISTS, UPDATING")
       // If a page with the same email exists, update it
       const existingPageId = filterResponse.results[0].id;
       
