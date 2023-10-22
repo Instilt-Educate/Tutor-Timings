@@ -88,6 +88,7 @@ function getDay(num) {
 }
 
 async function getData(){
+
   const res = await fetch('https://tutor-timings.vercel.app/submitTimes', {
     method: 'POST',
     headers: {
@@ -95,55 +96,14 @@ async function getData(){
     },
     body: JSON.stringify(getTimes())
   });
-  const data = await res.json();
-  alert("Your availabilities have been submitted!")
-  // refresh page
-  window.location.reload();
-}
-
-
-/* READ
-    sendData(data) takes in the *JSON object,
-    and is sent to a google apps scripts project thats deployed as a web app via
-    a post request with the JSON object in a text form in the body of the request
-    The app scripts project is connected to a google sheet which takes in the JSON
-    and formats it to the google sheet. 
-    An nonproduction copy of the google sheet is linked:
-    https://docs.google.com/spreadsheets/d/1CP3PBlQuo9TESws-w-PZQgOlwf8OucYV3HLSwrebPsI/edit?usp=sharing
-
-        App scripts project is in the google sheet under extensions->App scripts
-        Instructions for implementing a production copy of the sheet and app script 
-        is laid out in the app script main file
-
-    *JSON object in format of:
-    name is string
-    days of weeks contain arrays of availibity objects
-    {"start":time, "end": time} where time is an integer in the military time format,
-    e.g 0000 0100 0230 1230 1545 2130 2400 in IST time zone
-    {
-        "name": "Christopher Espitia-Alvarez",
-        "monday": [
-            {"start": 830,
-            "end": 1130}
-        ],
-        "sunday": [
-            {"start": 1200,
-            "end": 1500},
-            {"start": 1800,
-            "end": 2100}
-        ]
-    }
-*/
-function sendData(data){
-    var url = "https://script.google.com/macros/s/AKfycbywn01yLknTeaRDIhjGzaXtouNx6Yywx_f34hbIZuIT0bB-SYR8gWkCUNjPbwS9DGW3/exec"
-    //This url is the test google app scripts project, change to the real url when there is a production app scripts made
-    console.log(data);
-    fetch(url, {
-        redirect: "follow",
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-            "Content-Type": "text/plain;charset=utf-8",
-        },
-        })
+  if (res.status === 400){
+    alert("That email does not exist in the database, please try again! Contact someone from HR if you are unsure what email you used to sign up.")
+  }
+  else{
+    const data = await res.json();
+    alert("Your availabilities have been submitted!")
+    // refresh page
+    window.location.reload();
+  }
+  
 }

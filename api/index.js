@@ -90,7 +90,9 @@ app.post('/submitTimes', async (req, res) => {
     // send back response
     const timeData = req.body;
     console.log(timeData);
-    var databaseId = "f3b4e539d8a0482eb512457311b0bd75"
+    
+    // var databaseId = "f3b4e539d8a0482eb512457311b0bd75"
+    var databaseId = process.env.DATABASE_ID;
     const SundaySlots = {multi_select: timeData.sunday.map((slot) => ({name: slot,})),};
     const MondaySlots = {multi_select: timeData.monday.map((slot) => ({name: slot,})),};
     const TuesdaySlots = {multi_select: timeData.tuesday.map((slot) => ({name: slot,})),};
@@ -133,40 +135,41 @@ app.post('/submitTimes', async (req, res) => {
       res.send(updateResponse);
     }
     else{
-      // create a new page
-      const response = await notion.pages.create({
-        parent: {
-            database_id: databaseId,
-        },
-        properties: {
-            Name: {
-                title: [
-                {
-                    text: {
-                        content: timeData.name,
-                    },
-                },
-                ],
-            },
-            Email: {
-                rich_text: [
-                {
-                    text: {
-                        content: timeData.email,
-                    },
-                },
-                ]
-            },
-            Monday: MondaySlots,
-            Tuesday: TuesdaySlots,
-            Wednesday: WednesdaySlots,
-            Thursday: ThursdaySlots,
-            Friday: FridaySlots,
-            Saturday: SaturdaySlots,
-            Sunday: SundaySlots,
-        },
-    });
-    res.send(response);
+      res.status(400).send({error:"Email not found"});
+    //   // create a new page
+    //   const response = await notion.pages.create({
+    //     parent: {
+    //         database_id: databaseId,
+    //     },
+    //     properties: {
+    //         Name: {
+    //             title: [
+    //             {
+    //                 text: {
+    //                     content: timeData.name,
+    //                 },
+    //             },
+    //             ],
+    //         },
+    //         Email: {
+    //             rich_text: [
+    //             {
+    //                 text: {
+    //                     content: timeData.email,
+    //                 },
+    //             },
+    //             ]
+    //         },
+    //         Monday: MondaySlots,
+    //         Tuesday: TuesdaySlots,
+    //         Wednesday: WednesdaySlots,
+    //         Thursday: ThursdaySlots,
+    //         Friday: FridaySlots,
+    //         Saturday: SaturdaySlots,
+    //         Sunday: SundaySlots,
+    //     },
+    // });
+
     } 
 });
 
