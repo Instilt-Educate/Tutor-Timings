@@ -83,6 +83,49 @@ app.get('/getRecords', async (req, res) => {
     }
 });
 
+app.get('/getAccepted', async (req, res) => {
+  const DATABASE_ID = process.env.DATABASE_ID;
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            or: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Accepted" 
+                }
+              },
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      
+      const formattedRecords = allRecords.map(record => ({
+        name: record.properties.Name.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
+      }));
+      formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+      res.status(200).json(formattedRecords);
+
+    } catch (error) {
+      console.error('Error fetching accepted records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+  }
+
+)
+
 
 app.post('/submitTimes', async (req, res) => {
     // get json data from req
