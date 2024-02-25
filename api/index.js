@@ -99,8 +99,14 @@ app.get('/getAccepted', async (req, res) => {
                 property: "Status", 
                 status: {
                   equals: "Accepted" 
-                }
+                },
               },
+              {
+                property: "Status", 
+                status: {
+                  equals: "Accepted / Pending Email" 
+                }
+              }
             ],
           },
         });
@@ -126,6 +132,44 @@ app.get('/getAccepted', async (req, res) => {
 
 )
 
+app.post('/moveAccepted', async (req, res) => {
+  const acceptedList= req.body;
+  const DATABASE_ID = process.env.DATABASE_ID;
+  try {
+    acceptedList.forEach(async (obj) => {
+      const filterEmail = obj.email;
+      const filterResponse = await notion.databases.query({
+        database_id: DATABASE_ID,
+        filter: {
+          property: 'Email', 
+          rich_text: {
+            equals: filterEmail,
+          },
+        },
+      });
+      if (filterResponse.results.length > 0) {
+        const existingPageId = filterResponse.results[0].id;
+        
+        const updateResponse = await notion.pages.update({
+          page_id: existingPageId,
+          properties: {
+            Status: {
+              status: {
+                name: 'Acceptance Sent',
+              },
+            },
+          },
+        });
+      }
+    });
+    res.status(200).json({ message: 'Accepted records moved successfully' });
+  }
+  catch (error) {
+    console.error('Error moving accepted records:', error);
+    res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+  }
+  
+});
 
 app.post('/submitTimes', async (req, res) => {
     // get json data from req
@@ -179,40 +223,6 @@ app.post('/submitTimes', async (req, res) => {
     }
     else{
       res.status(400).send({error:"Email not found"});
-    //   // create a new page
-    //   const response = await notion.pages.create({
-    //     parent: {
-    //         database_id: databaseId,
-    //     },
-    //     properties: {
-    //         Name: {
-    //             title: [
-    //             {
-    //                 text: {
-    //                     content: timeData.name,
-    //                 },
-    //             },
-    //             ],
-    //         },
-    //         Email: {
-    //             rich_text: [
-    //             {
-    //                 text: {
-    //                     content: timeData.email,
-    //                 },
-    //             },
-    //             ]
-    //         },
-    //         Monday: MondaySlots,
-    //         Tuesday: TuesdaySlots,
-    //         Wednesday: WednesdaySlots,
-    //         Thursday: ThursdaySlots,
-    //         Friday: FridaySlots,
-    //         Saturday: SaturdaySlots,
-    //         Sunday: SundaySlots,
-    //     },
-    // });
-
     } 
 });
 
