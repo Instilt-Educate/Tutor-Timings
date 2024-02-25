@@ -147,9 +147,12 @@ app.post('/moveAccepted', async (req, res) => {
           },
         },
       });
-      if (filterResponse.results.length > 0) {
-        const existingPageId = filterResponse.results[0].id;
-        
+      record = filterResponse.results[0];
+      if (record.properties.Status.status.name !== "Accepted / Pending Email") {
+        console.log(`Record ${obj.name} already moved`);
+      }
+      else {
+        const existingPageId = record.id;
         const updateResponse = await notion.pages.update({
           page_id: existingPageId,
           properties: {
