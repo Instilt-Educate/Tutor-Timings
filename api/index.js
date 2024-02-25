@@ -133,7 +133,7 @@ app.get('/getAccepted', async (req, res) => {
 )
 
 app.post('/moveAccepted', async (req, res) => {
-  const acceptedList= req.body;
+  const acceptedList = req.body;
   const DATABASE_ID = process.env.DATABASE_ID;
   try {
     acceptedList.forEach(async (obj) => {
