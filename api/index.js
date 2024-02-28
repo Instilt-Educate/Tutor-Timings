@@ -5,7 +5,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const port = process.env.PORT || 3000;
-
+const DATABASE_ID = process.env.DATABASE_ID;
 const app = express();
 
 app.use(cors());
@@ -24,7 +24,6 @@ const notion = new Client({
 
 
 app.get('/getRecords', async (req, res) => {
-  const DATABASE_ID = process.env.DATABASE_ID;
   let allRecords = [];
   let nextPageToken = undefined;
   try {
@@ -84,7 +83,6 @@ app.get('/getRecords', async (req, res) => {
 });
 
 app.get('/getAccepted', async (req, res) => {
-  const DATABASE_ID = process.env.DATABASE_ID;
   let allRecords = [];
   let nextPageToken = undefined;
   try {
@@ -134,7 +132,6 @@ app.get('/getAccepted', async (req, res) => {
 
 app.post('/moveAccepted', async (req, res) => {
   const acceptedList = req.body;
-  const DATABASE_ID = process.env.DATABASE_ID;
   try {
     acceptedList.forEach(async (obj) => {
       const filterEmail = obj.email;
@@ -181,8 +178,6 @@ app.post('/submitTimes', async (req, res) => {
     const timeData = req.body;
     console.log(timeData);
     
-    // var databaseId = "f3b4e539d8a0482eb512457311b0bd75"
-    var databaseId = process.env.DATABASE_ID;
     const SundaySlots = {multi_select: timeData.sunday.map((slot) => ({name: slot,})),};
     const MondaySlots = {multi_select: timeData.monday.map((slot) => ({name: slot,})),};
     const TuesdaySlots = {multi_select: timeData.tuesday.map((slot) => ({name: slot,})),};
@@ -195,7 +190,7 @@ app.post('/submitTimes', async (req, res) => {
 
     // Check if a page with the same email already exists
     const filterResponse = await notion.databases.query({
-      database_id: databaseId,
+      database_id: DATABASE_ID,
       filter: {
         property: 'Email', 
         rich_text: {
