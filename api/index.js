@@ -7,6 +7,7 @@ require('dotenv').config();
 const port = process.env.PORT || 3000;
 const DATABASE_ID = process.env.DATABASE_ID;
 const app = express();
+export const maxDuration = 60;
 
 app.use(cors());
 app.use(express.json())
