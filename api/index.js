@@ -73,7 +73,7 @@ app.get('/getRecords', async (req, res) => {
         team: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor"),
         location: record.properties.City.select != undefined ? record.properties.City.select.name + ', ' + record.properties.Country.select?.name : record.properties.Country.select?.name || '',
         image: record.properties.image.url || '',
-        image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/uc?export=view&id=") : '',
+        image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
       }));
       formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
       res.status(200).json(formattedRecords);
