@@ -68,15 +68,176 @@ app.get('/getRecords', async (req, res) => {
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Name.title[0]?.plain_text || '',
-        email: record.properties.Email.email || '',
-        position: record.properties.Position.multi_select.length > 0 ? record.properties.Position.multi_select[0].name: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor").replace("HR", "Human Resources"),
-        team: record.properties.Team.multi_select[0]?.name.replace("Non-Departmental", "Tutor"),
-        location: record.properties.City.select != undefined ? record.properties.City.select.name + ', ' + record.properties.Country.select?.name : record.properties.Country.select?.name || '',
-        image: record.properties.image.url || '',
-        image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
+        hours: record.properties["Total Hours"].formula.number || 0,
       }));
-      formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
-      res.status(200).json(formattedRecords);
+      const realFormattedRecords = formattedRecords.filter(record => record.hours > 50 && record.hours < 100);
+      realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(realFormattedRecords);
+    } catch (error) {
+      console.error('Error fetching database records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.get('/getRecords50', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            or: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Active" 
+                }
+              },
+              {
+                property: "Status", 
+                status: {
+                  equals: "Unresponsive" 
+                }
+              },
+              // {
+              //   property: "Status", 
+              //   status: {
+              //     equals: "Joined"
+              //   }
+              // },
+              
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      // remove empty records
+      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      const formattedRecords = allRecords.map(record => ({
+        id: record.properties.ID.unique_id.number,
+        name: record.properties.Name.title[0]?.plain_text || '',
+        hours: record.properties["Total Hours"].formula.number || 0,
+      }));
+      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 50 && record.hours < 100);
+      realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(realFormattedRecords);
+    } catch (error) {
+      console.error('Error fetching database records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.get('/getRecords100', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            or: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Active" 
+                }
+              },
+              {
+                property: "Status", 
+                status: {
+                  equals: "Unresponsive" 
+                }
+              },
+              // {
+              //   property: "Status", 
+              //   status: {
+              //     equals: "Joined"
+              //   }
+              // },
+              
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      // remove empty records
+      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      const formattedRecords = allRecords.map(record => ({
+        id: record.properties.ID.unique_id.number,
+        name: record.properties.Name.title[0]?.plain_text || '',
+        hours: record.properties["Total Hours"].formula.number || 0,
+      }));
+      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 100 && record.hours < 150);
+      realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(realFormattedRecords);
+    } catch (error) {
+      console.error('Error fetching database records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.get('/getRecords100', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            or: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Active" 
+                }
+              },
+              {
+                property: "Status", 
+                status: {
+                  equals: "Unresponsive" 
+                }
+              },
+              // {
+              //   property: "Status", 
+              //   status: {
+              //     equals: "Joined"
+              //   }
+              // },
+              
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      // remove empty records
+      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      const formattedRecords = allRecords.map(record => ({
+        id: record.properties.ID.unique_id.number,
+        name: record.properties.Name.title[0]?.plain_text || '',
+        hours: record.properties["Total Hours"].formula.number || 0,
+      }));
+      const realFormattedRecords = formattedRecords.filter(record => record.hours > 150);
+      realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(realFormattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
       res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
