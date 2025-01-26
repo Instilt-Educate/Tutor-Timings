@@ -189,7 +189,7 @@ app.get('/getRecords100', async (req, res) => {
     }
 });
 
-app.get('/getRecords100', async (req, res) => {
+app.get('/getRecords150', async (req, res) => {
   let allRecords = [];
   let nextPageToken = undefined;
   try {
