@@ -96,12 +96,6 @@ app.get('/getRecords50', async (req, res) => {
                   equals: "Active" 
                 }
               },
-              {
-                property: "Status", 
-                status: {
-                  equals: "Unresponsive" 
-                }
-              },
               // {
               //   property: "Status", 
               //   status: {
@@ -123,9 +117,11 @@ app.get('/getRecords50', async (req, res) => {
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Name.title[0]?.plain_text || '',
+        email: record.properties.Email || '',
         hours: record.properties["Total Hours"].formula.number || 0,
+        certificates: record.properties["Certificate Issued"].multi_select.map((cert) => cert.name),
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 50 && record.hours < 100);
+      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 50 && record.hours < 100 && !record.certificates.includes("50"));
       realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(realFormattedRecords);
     } catch (error) {
@@ -178,9 +174,11 @@ app.get('/getRecords100', async (req, res) => {
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Name.title[0]?.plain_text || '',
+        email: record.properties.Email || '',
         hours: record.properties["Total Hours"].formula.number || 0,
+        certificates: record.properties["Certificate Issued"].multi_select.map((cert) => cert.name),
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 100 && record.hours < 150);
+      const realFormattedRecords = formattedRecords.filter(record => record.hours >= 100 && record.hours < 150 && !record.certificates.includes("100"));
       realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(realFormattedRecords);
     } catch (error) {
@@ -233,9 +231,11 @@ app.get('/getRecords150', async (req, res) => {
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Name.title[0]?.plain_text || '',
+        email: record.properties.Email || '',
         hours: record.properties["Total Hours"].formula.number || 0,
+        certificates: record.properties["Certificate Issued"].multi_select.map((cert) => cert.name),
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours > 150);
+      const realFormattedRecords = formattedRecords.filter(record => record.hours > 150 && record.hours < 200 && !record.certificates.includes("150"));
       realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(realFormattedRecords);
     } catch (error) {
