@@ -25,7 +25,7 @@ const notion = new Client({
 
 
 app.get('/getRecords', async (req, res) => {
-  const hour = req.query.hour;
+  const hour = parseInt(req.query.hour);
   let allRecords = [];
   let nextPageToken = undefined;
   try {
