@@ -27,8 +27,18 @@ const notion = new Client({
     auth: process.env.API_KEY,
 });
 
+const tierToHours = {
+  'bronze': 0,
+  'silver': 50,
+  'gold': 100,
+  'platinum': 150,
+  'diamond': 200,
+}
+
 app.get('/getRecords', async (req, res) => {
-  const hour = parseInt(req.query.hour);
+  // const hour = parseInt(req.query.hour);
+  const tier = req.query.tier.toLowerCase();
+  const hour = tierToHours[tier] || 0; // Default to 0 if tier is not found
   let allRecords = [];
   let nextPageToken = undefined;
   try {
@@ -51,9 +61,23 @@ app.get('/getRecords', async (req, res) => {
                   }
                 ]
               },
-              { property: "Total Hours", formula: { number: { greater_than: hour } } },
-              { property: "Total Hours", formula: { number: { less_than: hour + 50 } } },
-              { property: "Certificate Issued", multi_select: { does_not_contain: hour.toString() } }
+              {
+                property: "isAdmin",
+                checkbox: { equals: false }
+              },
+              { 
+                property: "Total Hours",
+                formula: { number: { greater_than: hour } } 
+              },
+              tier !== 'diamond' && 
+              { 
+                property: "Total Hours", 
+                formula: { number: { less_than: hour + 50 } } 
+              },
+              { 
+                property: "Certificate Issued", 
+                multi_select: { does_not_contain: hour.toString() }
+              }
             ]
           },
         });
