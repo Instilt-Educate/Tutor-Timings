@@ -71,7 +71,7 @@ app.get('/getRecords', async (req, res) => {
         name: record.properties.Name.title[0]?.plain_text || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50));
+      const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50) && !record.certificates.includes(hour.toString()));
       realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(realFormattedRecords);
     } catch (error) {
