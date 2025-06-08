@@ -59,6 +59,11 @@ app.get('/getRecords', async (req, res) => {
               // },
               
             ],
+            and: [
+              { property: "Total Hours", formula: { number: { greater_than: hour } } },
+              { property: "Total Hours", formula: { number: { less_than: hour + 50 } } },
+              { property: "Certificate Issued", multi_select: { does_not_contain: hour.toString() } }
+            ],
           },
         });
   
@@ -74,9 +79,8 @@ app.get('/getRecords', async (req, res) => {
         name: record.properties.Names.title[0]?.plain_text || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50) && !record['Certificate Issued']?.multi_select?.includes(hour.toString()));
-      realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
-      res.status(200).json(realFormattedRecords);
+      formattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
       res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
