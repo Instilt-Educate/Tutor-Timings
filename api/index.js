@@ -36,34 +36,25 @@ app.get('/getRecords', async (req, res) => {
         const response = await notion.databases.query({
           database_id: DATABASE_ID,
           start_cursor: nextPageToken,
-          // filter by status Active, Unresponsive, Joined
+          // filter by status Active, Unresponsive
           filter: {
-            or: [
-              {
-                property: "Status", 
-                status: {
-                  equals: "Active" 
-                }
-              },
-              {
-                property: "Status", 
-                status: {
-                  equals: "Unresponsive" 
-                }
-              },
-              // {
-              //   property: "Status", 
-              //   status: {
-              //     equals: "Joined"
-              //   }
-              // },
-              
-            ],
             and: [
+              {
+                or: [
+                  {
+                    property: "Status",
+                    status: { equals: "Active" }
+                  },
+                  {
+                    property: "Status",
+                    status: { equals: "Unresponsive" }
+                  }
+                ]
+              },
               { property: "Total Hours", formula: { number: { greater_than: hour } } },
               { property: "Total Hours", formula: { number: { less_than: hour + 50 } } },
               { property: "Certificate Issued", multi_select: { does_not_contain: hour.toString() } }
-            ],
+            ]
           },
         });
   
@@ -77,13 +68,14 @@ app.get('/getRecords', async (req, res) => {
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Names.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
       formattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
-      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+      res.status(500).json({ error: 'Internal server error, please contact Tech Ops' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
     }
 });
 
