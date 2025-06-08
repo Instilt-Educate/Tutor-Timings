@@ -23,7 +23,6 @@ const notion = new Client({
     auth: process.env.API_KEY,
 });
 
-
 app.get('/getRecords', async (req, res) => {
   const hour = parseInt(req.query.hour);
   let allRecords = [];
@@ -65,13 +64,13 @@ app.get('/getRecords', async (req, res) => {
       } while (nextPageToken);
 
       // remove empty records
-      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
-        name: record.properties.Name.title[0]?.plain_text || '',
+        name: record.properties.Names.title[0]?.plain_text || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
-      const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50) && !record.certificates.includes(hour.toString()));
+      const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50) && !record['Certificate Issued']?.multi_select?.includes(hour.toString()));
       realFormattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(realFormattedRecords);
     } catch (error) {
