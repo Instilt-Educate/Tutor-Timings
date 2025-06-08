@@ -42,43 +42,43 @@ app.get('/getRecords', async (req, res) => {
   let allRecords = [];
   let nextPageToken = undefined;
   try {
+      // Build filter array dynamically
+      const filterArray = [
+        {
+          or: [
+            {
+              property: "Status",
+              status: { equals: "Active" }
+            },
+            {
+              property: "Status",
+              status: { equals: "Unresponsive" }
+            }
+          ]
+        },
+        {
+          property: "isAdmin",
+          checkbox: { equals: false }
+        },
+        {
+          property: "Total Hours",
+          formula: { number: { greater_than: hour } }
+        },
+        {
+          property: "Total Hours",
+          formula: { number: { less_than: tier === 'diamond' ? 1000000 : hour + 50 } }
+        },
+        {
+          property: "Certificate Issued",
+          multi_select: { does_not_contain: hour.toString() }
+        }
+      ];
       do {
         const response = await notion.databases.query({
           database_id: DATABASE_ID,
           start_cursor: nextPageToken,
-          // filter by status Active, Unresponsive
           filter: {
-            and: [
-              {
-                or: [
-                  {
-                    property: "Status",
-                    status: { equals: "Active" }
-                  },
-                  {
-                    property: "Status",
-                    status: { equals: "Unresponsive" }
-                  }
-                ]
-              },
-              {
-                property: "isAdmin",
-                checkbox: { equals: false }
-              },
-              { 
-                property: "Total Hours",
-                formula: { number: { greater_than: hour } } 
-              },
-              tier !== 'diamond' && 
-              { 
-                property: "Total Hours", 
-                formula: { number: { less_than: hour + 50 } } 
-              },
-              { 
-                property: "Certificate Issued", 
-                multi_select: { does_not_contain: hour.toString() }
-              }
-            ]
+            and: filterArray
           },
         });
   
