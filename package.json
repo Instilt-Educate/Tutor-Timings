@@ -1,6 +1,7 @@
 {
   "name": "tutor-timings",
   "version": "1.0.0",
+  "type": "module",
   "repository": {
     "url": "git+https://github.com/Instilt-Educate/Tutor-Timings.git"
   },
