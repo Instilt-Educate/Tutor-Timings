@@ -28,11 +28,11 @@ const notion = new Client({
 });
 
 const tierToHours = {
-  'bronze': 0,
-  'silver': 50,
-  'gold': 100,
-  'platinum': 150,
-  'diamond': 200,
+  'bronze': 50,
+  'silver': 100,
+  'gold': 150,
+  'platinum': 200,
+  'diamond': 250,
 }
 
 app.get('/getRecords', async (req, res) => {
@@ -62,7 +62,7 @@ app.get('/getRecords', async (req, res) => {
         },
         {
           property: "Total Hours",
-          formula: { number: { greater_than: hour } }
+          formula: { number: { greater_than_or_equal_to : hour } }
         },
         {
           property: "Total Hours",
