@@ -245,6 +245,57 @@ app.post('/submitTimes', async (req, res) => {
     } 
 });
 
+app.post('/issueCertificates', async (req, res) => {
+  const { names, tier } = req.body;
+  if (!Array.isArray(names) || typeof tier !== 'string') {
+    return res.status(400).json({ error: 'Invalid request body. Expected { names: string[], tier: string }' });
+  }
+  
+  tier = tier.toLowerCase();
+
+  const results = [];
+
+  for (const name of names) {
+    try {
+      // Search for the record by name
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        filter: {
+          property: 'Names',
+          title: {
+            equals: name
+          }
+        }
+      });
+      if (response.results.length === 0) {
+        results.push({ name, status: 'not found' });
+        continue;
+      }
+      const page = response.results[0];
+      const pageId = page.id;
+      // Get current certificate issued values
+      const currentCertificates = page.properties['Certificate Issued'].multi_select.map(opt => opt.name);
+      // Add the tier if not already present
+      if (!currentCertificates.includes(tier)) {
+        currentCertificates.push(tier);
+      }
+      // Update the page
+      await notion.pages.update({
+        page_id: pageId,
+        properties: {
+          'Certificate Issued': {
+            multi_select: currentCertificates.map(name => ({ name }))
+          }
+        }
+      });
+      results.push({ name, status: 'updated' });
+    } catch (error) {
+      results.push({ name, status: 'error', error: error.message });
+    }
+  }
+
+  res.status(200).json({ results });
+});
 
 app.listen(port, () => {
     console.log(`Server started on port ${port}`)
