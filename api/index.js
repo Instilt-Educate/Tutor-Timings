@@ -246,11 +246,11 @@ app.post('/submitTimes', async (req, res) => {
 });
 
 app.post('/issueCertificates', async (req, res) => {
-  const { names, tier } = req.body;
+  let { names, tier } = req.body;
   if (!Array.isArray(names) || typeof tier !== 'string') {
     return res.status(400).json({ error: 'Invalid request body. Expected { names: string[], tier: string }' });
   }
-  
+
   tier = tier.toLowerCase();
 
   const results = [];
