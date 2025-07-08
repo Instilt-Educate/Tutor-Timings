@@ -36,8 +36,11 @@ const tierToHours = {
 }
 
 app.get('/getRecords', async (req, res) => {
+
+  const startTime = performance.now();
+
   // const hour = parseInt(req.query.hour);
-  const tier = req.query.tier.toLowerCase();
+  const tier = req.query.tier?.toLowerCase();
   const hour = tierToHours[tier] || 0; // Default to 0 if tier is not found
   let allRecords = [];
   let nextPageToken = undefined;
@@ -71,6 +74,12 @@ app.get('/getRecords', async (req, res) => {
         {
           property: "Certificate Issued",
           multi_select: { does_not_contain: hour.toString() }
+        },
+        {
+          property: "Names",
+          rich_text: {
+            is_not_empty: true
+          }
         }
       ];
       do {
@@ -80,6 +89,12 @@ app.get('/getRecords', async (req, res) => {
           filter: {
             and: filterArray
           },
+          sorts: [
+            {
+              property: "Total Hours",
+              direction: "ascending",
+            },
+          ],
         });
   
         allRecords.push(...response.results);
@@ -88,19 +103,26 @@ app.get('/getRecords', async (req, res) => {
       } while (nextPageToken);
 
       // remove empty records
-      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+      // allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Names.title[0]?.plain_text || '',
         email: record.properties.Email.email || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
-      formattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      
+      //for (let i = 0; i < allRecords.length; i++) {
+      //  
+      //}
+      // formattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
       res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
       res.status(500).json({ error: 'Internal server error, please contact Tech Ops' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
     }
+
+    const endTime = performance.now();
+    console.log(`Call to getRecords took ${(endTime - startTime)/1000} seconds`);
 });
 
 app.get('/getAccepted', async (req, res) => {
