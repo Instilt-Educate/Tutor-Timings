@@ -74,10 +74,8 @@ app.get('/getRecords', async (req, res) => {
           multi_select: { does_not_contain: hour.toString() }
         },
         {
-          property: "Names",
-          rich_text: {
-            is_not_empty: true
-          }
+          property: "Team",
+          multi_select: { is_not_empty: true }
         }
       ];
       do {
@@ -109,6 +107,71 @@ app.get('/getRecords', async (req, res) => {
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
       // formattedRecords.sort((a, b) => (a.hours > b.hours) ? 1 : -1);
+      res.status(200).json(formattedRecords);
+    } catch (error) {
+      console.error('Error fetching database records:', error);
+      res.status(500).json({ error: 'Internal server error, please contact Tech Ops' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.get('/getDetails', async (req, res) => {
+
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      // Build filter array dynamically
+      const filterArray = [
+        {
+          or: [
+            {
+              property: "Status",
+              status: { equals: "Active" }
+            },
+            {
+              property: "Status",
+              status: { equals: "Unresponsive" }
+            }
+          ]
+        },
+        {
+          property: "Team",
+          multi_select: { is_not_empty: true }
+        }
+      ];
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          filter: {
+            and: filterArray
+          },
+          sorts: [
+            {
+              property: "Total Hours",
+              direction: "ascending",
+            },
+          ],
+        });
+
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      // remove empty records
+      // allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+      //let realFormattedRecords = [];
+
+      const formattedRecords = allRecords.map(record => ({
+        id: record.properties.ID.unique_id.number,
+        name: record.properties.Names.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
+        team: record.properties.Team.multi_select[0].name ?? '',
+        position: record.properties.Position.multi_select[0]?.name ?? null,
+        location: `${record.properties.City.select?.name}, ${record.properties.Country.select?.name}`,
+        image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
+      }));
+      
       res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
