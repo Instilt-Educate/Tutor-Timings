@@ -168,7 +168,10 @@ app.get('/getDetails', async (req, res) => {
         email: record.properties.Email.email || '',
         team: record.properties.Team.multi_select[0].name ?? '',
         position: record.properties.Position.multi_select[0]?.name ?? null,
-        location: `${record.properties.City.select?.name}, ${record.properties.Country.select?.name}`,
+        location: record.properties.City.select?.name ?
+         `${record.properties.City.select?.name}, ${record.properties.Country.select?.name}`
+         :
+         `${record.properties.Country.select?.name}`,
         image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
       }));
       
