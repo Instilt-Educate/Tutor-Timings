@@ -136,6 +136,10 @@ app.get('/getDetails', async (req, res) => {
         {
           property: "Team",
           multi_select: { is_not_empty: true }
+        },
+        {
+          property: "image",
+          url: { is_not_empty: true }
         }
       ];
       do {
