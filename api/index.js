@@ -164,7 +164,7 @@ app.get('/getDetails', async (req, res) => {
 
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
-        name: record.properties.Names.title[0]?.plain_text || '',
+        name: record.properties.Names.title[0]?.plain_text.trim() || '',
         email: record.properties.Email.email || '',
         team: record.properties.Team.multi_select[0].name ?? '',
         position: record.properties.Position.multi_select[0]?.name ?? null,
