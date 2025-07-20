@@ -177,6 +177,7 @@ app.get('/getDetails', async (req, res) => {
          :
          `${record.properties.Country.select?.name}`,
         image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
+        cohort: record.properties.Cohort.select?.name,
       }));
       
       res.status(200).json(formattedRecords);
