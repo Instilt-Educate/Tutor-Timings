@@ -179,7 +179,8 @@ app.get('/getDetails', async (req, res) => {
         image: (record.properties.image.url) ? record.properties.image.url.split("/view")[0].replace("/file/d/", "/thumbnail?id=") : '',
         cohort: record.properties.Cohort.select?.name,
       }));
-      
+
+      res.setHeader("Vercel-CDN-Cache-Control", "max-age=604800");
       res.status(200).json(formattedRecords);
     } catch (error) {
       console.error('Error fetching database records:', error);
