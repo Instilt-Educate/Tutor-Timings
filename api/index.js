@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 });
 
 const notion = new Client({ 
-    auth: "secret_gFxhy4vsPRkjFrzL8GBVOrISsrpDGwBrHF0t0bIcUig",
+    auth: process.env.API_KEY,
 });
 
 const tierToHours = {
