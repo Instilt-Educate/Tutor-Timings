@@ -5,6 +5,7 @@ import { dirname } from 'path';
 import { Client } from '@notionhq/client';
 import cors from 'cors';
 import 'dotenv/config';
+import { type } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -236,6 +237,90 @@ app.get('/getAccepted', async (req, res) => {
 
 )
 
+//Route that returns all applicants with status "Application Received"
+app.get('/getApplicationReceived', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Application Received
+          filter: {
+            property: "Status", 
+            status: {
+              equals: "Application Received" 
+            }
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+      // console.log(allRecords);
+      // allRecords = allRecords.filter(record => record.properties.position[0]?.plain_text !== undefined);
+      
+      const formattedRecords = allRecords.map(record => ({
+        name: record.properties.Names.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
+        date_applied: record.properties["Date Applied"].date?.start || '',
+        last_updated: record.properties["Last Edited Time"]?.last_edited_time || '',
+        page_id: record.id,
+        
+      }));
+      // const formattedRecords = allRecords;
+      formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+      res.status(200).json(formattedRecords);
+
+    } catch (error) {
+      console.error('Error fetching accepted records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+  }
+
+)
+
+// Expects: req.body = ["page-id-1", "page-id-2", ...]
+app.post('/moveEmailSent', async (req, res) => {
+  const emailSentList = req.body;
+  console.log("email sent list:", emailSentList);
+  if (!Array.isArray(emailSentList) || emailSentList.length === 0) {
+    return res.status(400).json({ error: 'Request body must be a non-empty array of page IDs.' });
+  }
+
+  const updatePromises = [];
+
+  try{
+    for(const pageId of emailSentList){
+      if(typeof pageId !== 'string' || pageId.trim() === ''){
+        console.warn(`Invalid page ID: ${pageId}`);
+        continue; // Skip invalid page IDs
+      }
+
+      const updatePromise = notion.pages.update({
+        page_id: pageId,
+        properties: {
+          Status: {
+            status: {
+              name: 'Interview Email Sent',
+            },
+          },
+        },
+      });
+      updatePromises.push(updatePromise);
+    }
+    
+    await Promise.all(updatePromises);
+  }catch(error){
+    console.error('Error moving Email Sent records:', error);
+    return res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+  }
+
+  return res.status(200).json({ message: 'Email Sent records moved successfully' });
+})
+
 app.post('/moveAccepted', async (req, res) => {
   const acceptedList = req.body;
   try {
@@ -384,6 +469,45 @@ app.post('/issueCertificates', async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server started on port ${port}`)
+});
+
+
+// Route to add "Interview Email Sent" to Status property
+app.post('/addInterviewStatus', async (req, res) => {
+  try {
+    const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
+    
+    // Extract current options and remove forbidden fields
+    const existingOptions = db.properties.Status.status.options.map(opt => ({
+      name: opt.name,
+      color: opt.color || 'default',
+    }));
+
+    const newOptionName = "Interview Email Sent";
+    const alreadyExists = existingOptions.some(opt => opt.name === newOptionName);
+
+    if (alreadyExists) {
+      return res.status(200).json({ message: `"${newOptionName}" already exists` });
+    }
+
+    existingOptions.push({ name: newOptionName, color: "orange" });
+
+    await notion.databases.update({
+      database_id: DATABASE_ID,
+      properties: {
+        Status: {
+          status: {
+            options: existingOptions,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ message: `✅ Added "${newOptionName}" to Status property.` });
+  } catch (error) {
+    console.error("Error adding new status option:", error);
+    res.status(500).json({ error: "Failed to add new Status option", details: error.message });
+  }
 });
 
 export default app;
