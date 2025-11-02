@@ -25,7 +25,7 @@ const notion = new Client({
 
 
 app.get('/getRecords', async (req, res) => {
-  const hour = req.query.hour;
+  const hour = req.query.hour || 50;
   let allRecords = [];
   let nextPageToken = undefined;
   try {
@@ -65,10 +65,10 @@ app.get('/getRecords', async (req, res) => {
       } while (nextPageToken);
 
       // remove empty records
-      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      allRecords = allRecords.filter(record => record.properties.Names.title[0].plain_text !== undefined);
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
-        name: record.properties.Name.title[0]?.plain_text || '',
+        name: record.properties.Names.title[0]?.plain_text.trim() || '',
         hours: record.properties["Total Hours"].formula.number || 0,
       }));
       const realFormattedRecords = formattedRecords.filter(record => record.hours > hour && record.hours < (hour + 50));
@@ -111,10 +111,10 @@ app.get('/getAccepted', async (req, res) => {
   
         nextPageToken = response.next_cursor;
       } while (nextPageToken);
-      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
       
       const formattedRecords = allRecords.map(record => ({
-        name: record.properties.Name.title[0]?.plain_text || '',
+        name: record.properties.Names.title[0]?.plain_text || '',
         email: record.properties.Email.email || '',
       }));
       formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
@@ -126,7 +126,122 @@ app.get('/getAccepted', async (req, res) => {
     }
   }
 
-)
+);
+
+app.get('/getAcceptedEmailSent', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  let two_weeks = new Date(Date(Date.now() - 12096e5)).toISOString(); // 12096e5 is 14 days
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            and: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Acceptance Sent" 
+                },
+              },
+              {
+                property: "Last edited time", 
+                "date": {
+                  on_or_before: two_weeks
+                }
+              }
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+      
+      const formattedRecords = allRecords.map(record => ({
+        name: record.properties.Names.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
+        date: record.properties['Last edited time'] || '',
+        page_id: record.id
+      }));
+      formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+      res.status(200).json(formattedRecords);
+
+    } catch (error) {
+      console.error('Error fetching accepted records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.post('/updateNonCompliant', async (req, res) => {
+  const person = req.body;
+
+  try {
+    const updateResponse = await notion.pages.update({
+      page_id: person.page_id,
+      properties: {
+        "Non Compliant": {
+          rich_text: "Non Compliant",
+        }
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    console.error('Error moving accepted records:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/getNonCompliant', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        start_cursor: nextPageToken,
+        // filter by status Active, Unresponsive, Joined
+        filter: {
+          and: [
+            {
+              property: "Non Compliant", 
+              rich_text: {
+                is_not_empty: true,
+              },
+            },
+            {
+              property: "Status", 
+              status: {
+                equals: "Application Email Sent", 
+              },
+            }
+          ],
+        },
+      });
+
+      allRecords.push(...response.results);
+
+      nextPageToken = response.next_cursor;
+    } while (nextPageToken);
+    allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+    
+    const formattedRecords = allRecords.map(record => ({
+      name: record.properties.Names.title[0]?.plain_text || '',
+      email: record.properties.Email.email || '',
+    }));
+    formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+    res.status(200).json(formattedRecords);
+
+  } catch (error) {
+    console.error('Error fetching accepted records:', error);
+    res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+  }
+});
 
 app.post('/moveAccepted', async (req, res) => {
   const acceptedList = req.body;
