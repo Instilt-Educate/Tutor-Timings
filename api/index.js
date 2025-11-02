@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 });
 
 const notion = new Client({ 
-    auth: process.env.API_KEY,
+    auth: "secret_gFxhy4vsPRkjFrzL8GBVOrISsrpDGwBrHF0t0bIcUig",
 });
 
 const tierToHours = {
@@ -304,7 +304,7 @@ app.post('/moveEmailSent', async (req, res) => {
         properties: {
           Status: {
             status: {
-              name: 'Interview Email Sent',
+              name: 'Active',
             },
           },
         },
@@ -510,4 +510,58 @@ app.post('/addInterviewStatus', async (req, res) => {
   }
 });
 
+app.get('/getUnassignedMembers', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          filter: {
+            and: [
+              {
+                or: [
+                  {
+                    property: "Status",
+                    status: { equals: "Active" },
+                  },
+                  {
+                    property: "Status",
+                    status: { equals: "Unresponsive" },
+                  },
+                ],
+              },
+              {
+                property: "Batch Status",
+                status: { equals: "Unassigned" },
+              },
+              {
+                property: "isAdmin",
+                checkbox: { equals: false },
+              },
+            ],
+          }
+        });
+
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      const formattedRecords = allRecords.map(record => ({
+        id: record.id,
+        name: record.properties.Names.title[0]?.plain_text.trim() || '',
+        email: record.properties.Email.email || '',
+        team: record.properties.Team.multi_select[0].name ?? '',
+        cohort: record.properties.Cohort.select?.name,
+      }));
+
+      // res.setHeader("Vercel-CDN-Cache-Control", "max-age=604800");
+      res.status(200).json(formattedRecords);
+    } catch (error) {
+      console.error('Error fetching database records:', error);
+      res.status(500).json({ error: 'Internal server error, please contact Tech Ops' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
 export default app;
