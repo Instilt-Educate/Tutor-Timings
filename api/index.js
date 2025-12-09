@@ -5,7 +5,9 @@ import { dirname } from 'path';
 import { Client } from '@notionhq/client';
 import cors from 'cors';
 import 'dotenv/config';
-import { type } from 'os';
+
+// Slack Client library
+import { WebClient } from '@slack/web-api';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,8 +27,11 @@ app.get('/', (req, res) => {
 });
 
 const notion = new Client({ 
-    auth: "secret_gFxhy4vsPRkjFrzL8GBVOrISsrpDGwBrHF0t0bIcUig",
+    auth: process.env.NOTION_API_KEY,
 });
+
+// Slack Client initialization
+const slack = new WebClient(process.env.SLACK_TOKEN);
 
 const tierToHours = {
   'bronze': 50,
@@ -164,9 +169,7 @@ app.get('/getDetails', async (req, res) => {
       } while (nextPageToken);
 
       // remove empty records
-      // allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
-      //let realFormattedRecords = [];
-
+      allRecords = allRecords.filter(record => record.properties.Names.title[0].plain_text !== undefined);
       const formattedRecords = allRecords.map(record => ({
         id: record.properties.ID.unique_id.number,
         name: record.properties.Names.title[0]?.plain_text.trim() || '',
@@ -220,10 +223,10 @@ app.get('/getAccepted', async (req, res) => {
   
         nextPageToken = response.next_cursor;
       } while (nextPageToken);
-      allRecords = allRecords.filter(record => record.properties.Name.title[0]?.plain_text !== undefined);
+      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
       
       const formattedRecords = allRecords.map(record => ({
-        name: record.properties.Name.title[0]?.plain_text || '',
+        name: record.properties.Names.title[0]?.plain_text || '',
         email: record.properties.Email.email || '',
       }));
       formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
@@ -235,7 +238,122 @@ app.get('/getAccepted', async (req, res) => {
     }
   }
 
-)
+);
+
+app.get('/getAcceptedEmailSent', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  let two_weeks = new Date(Date(Date.now() - 12096e5)).toISOString(); // 12096e5 is 14 days
+  try {
+      do {
+        const response = await notion.databases.query({
+          database_id: DATABASE_ID,
+          start_cursor: nextPageToken,
+          // filter by status Active, Unresponsive, Joined
+          filter: {
+            and: [
+              {
+                property: "Status", 
+                status: {
+                  equals: "Acceptance Sent" 
+                },
+              },
+              {
+                property: "Last edited time", 
+                "date": {
+                  on_or_before: two_weeks
+                }
+              }
+            ],
+          },
+        });
+  
+        allRecords.push(...response.results);
+  
+        nextPageToken = response.next_cursor;
+      } while (nextPageToken);
+
+      allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+      
+      const formattedRecords = allRecords.map(record => ({
+        name: record.properties.Names.title[0]?.plain_text || '',
+        email: record.properties.Email.email || '',
+        date: record.properties['Last edited time'] || '',
+        page_id: record.id
+      }));
+      formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+      res.status(200).json(formattedRecords);
+
+    } catch (error) {
+      console.error('Error fetching accepted records:', error);
+      res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+    }
+});
+
+app.post('/updateNonCompliant', async (req, res) => {
+  const person = req.body;
+
+  try {
+    const updateResponse = await notion.pages.update({
+      page_id: person.page_id,
+      properties: {
+        "Non Compliant": {
+          rich_text: "Non Compliant",
+        }
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    console.error('Error moving accepted records:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/getNonCompliant', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  try {
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        start_cursor: nextPageToken,
+        // filter by status Active, Unresponsive, Joined
+        filter: {
+          and: [
+            {
+              property: "Non Compliant", 
+              rich_text: {
+                is_not_empty: true,
+              },
+            },
+            {
+              property: "Status", 
+              status: {
+                equals: "Application Email Sent", 
+              },
+            }
+          ],
+        },
+      });
+
+      allRecords.push(...response.results);
+
+      nextPageToken = response.next_cursor;
+    } while (nextPageToken);
+    allRecords = allRecords.filter(record => record.properties.Names.title[0]?.plain_text !== undefined);
+    
+    const formattedRecords = allRecords.map(record => ({
+      name: record.properties.Names.title[0]?.plain_text || '',
+      email: record.properties.Email.email || '',
+    }));
+    formattedRecords.sort((a, b) => (a.name > b.name) ? 1 : -1);
+    res.status(200).json(formattedRecords);
+
+  } catch (error) {
+    console.error('Error fetching accepted records:', error);
+    res.status(500).json({ error: 'Internal server error' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
+  }
+});
 
 //Route that returns all applicants with status "Application Received"
 app.get('/getApplicationReceived', async (req, res) => {
@@ -553,9 +671,20 @@ app.get('/getUnassignedMembers', async (req, res) => {
         id: record.id,
         name: record.properties.Names.title[0]?.plain_text.trim() || '',
         email: record.properties.Email.email || '',
-        team: record.properties.Team.multi_select[0].name ?? '',
+        team: record.properties.Team.multi_select[0]?.name ?? '',
         cohort: record.properties.Cohort.select?.name,
+        batch_status: record.properties["Batch Status"].status.name || '',
+        availability: {
+          monday: record.properties.Monday.multi_select.map(slot => slot.name) || [],
+          tuesday: record.properties.Tuesday.multi_select.map(slot => slot.name) || [],
+          wednesday: record.properties.Wednesday.multi_select.map(slot => slot.name) || [],
+          thursday: record.properties.Thursday.multi_select.map(slot => slot.name) || [],
+          friday: record.properties.Friday.multi_select.map(slot => slot.name) || [],
+          saturday: record.properties.Saturday.multi_select.map(slot => slot.name) || [],
+          sunday: record.properties.Sunday.multi_select.map(slot => slot.name) || [],
+        }
       }));
+      // formattedRecords = allRecords;
 
       // res.setHeader("Vercel-CDN-Cache-Control", "max-age=604800");
       res.status(200).json(formattedRecords);
@@ -564,4 +693,199 @@ app.get('/getUnassignedMembers', async (req, res) => {
       res.status(500).json({ error: 'Internal server error, please contact Tech Ops' }); // Set HTTP status code to 500 (Internal Server Error) for any unexpected errors
     }
 });
+
+// Get all slack members
+// Helper: fetch Slack members from Slack API and return mapped results.
+async function fetchSlackUsers() {
+  const slackApiUrl = process.env.SLACK_API_URL;
+  const slackToken = process.env.SLACK_TOKEN;
+
+  if (!slackApiUrl || !slackToken) {
+    throw new Error('Missing Slack API configuration (SLACK_API_URL or SLACK_TOKEN)');
+  }
+
+  const response = await fetch(`${slackApiUrl}users.list`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${slackToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Slack API request failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.ok) {
+    throw new Error(`Slack API error: ${data.error}`);
+  }
+
+  // Map to simpler shape used in our app
+  const members = data.members.map(member => ({
+    id: member.id,
+    name: member.real_name || member.name,
+    display_name: member.profile.display_name,
+    email: member.profile.email || null,
+    image: member.profile.image_192 || null,
+  }));
+
+  return members;
+}
+
+// Normalize a string for matching: remove diacritics, remove non-alphanumerics,
+// collapse whitespace and lowercase. Useful for fuzzy name matching.
+function normalizeForMatch(input) {
+  if (!input) return '';
+  // Remove diacritics (normalize to NFD and strip combining marks)
+  const noDiacritics = input.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Convert to lowercase, then remove any character that's not a letter or number
+  // keep only alphanumeric (no spaces) so that "John D.'s" and "John D S" match
+  return noDiacritics.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// Keep the existing GET endpoint but delegate to helper
+app.get('/getSlackMembers', async (req, res) => {
+  try {
+    const members = await fetchSlackUsers();
+    res.status(200).json(members);
+  } catch (error) {
+    console.error('Error fetching Slack members:', error);
+    res.status(500).json({ error: 'Internal server error while fetching Slack members' });
+  }
+});
+
+// Get Notion members with email and name
+// GET: query Notion directly (existing behavior). POST: accept an array of notion-like records in the
+// request body (useful when you already have `formattedRecords` from another endpoint). The POST
+// endpoint will return only { email, name } for each item.
+app.get('/getSlackMembersFromNotion', async (req, res) => {
+  let allRecords = [];
+  let nextPageToken = undefined;
+  
+  try {
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        start_cursor: nextPageToken,
+      });
+
+      allRecords.push(...response.results);
+      nextPageToken = response.next_cursor;
+    } while (nextPageToken);
+
+    const formattedRecords = allRecords.map(record => ({
+      email: record.properties.Email.email || '',
+      name: record.properties.Names.title[0]?.plain_text || '',
+    }));
+
+    res.status(200).json(formattedRecords);
+  } catch (error) {
+    console.error('Error fetching Notion records:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Accept notion-like records in the body and return only email + name.
+// Example usage:
+// curl -X POST "http://localhost:3000/getSlackMembersFromNotion" \
+//  -H "Content-Type: application/json" \
+//  -d '[{"id":"abc","email":"hello@example.com","name":"Hello Person"}]'
+app.post('/getSlackMembersFromNotion', async (req, res) => {
+  const notionData = req.body;
+
+  if (!Array.isArray(notionData)) {
+    return res.status(400).json({ error: 'Request body must be an array of notion records (formattedRecords style).' });
+  }
+
+  try {
+    const simplified = notionData.map(item => ({
+      email: item.email || '',
+      name: item.name || '',
+      id: item.id || null,
+    }));
+
+    // Get all members from Slack using internal helper
+    let slackMembers = [];
+    try {
+      slackMembers = await fetchSlackUsers();
+    } catch (err) {
+      console.error('Error fetching slack members:', err);
+      // proceed with empty slackMembers but still return the simplified list with slack lookup results
+    }
+
+    // For each notion record, find a slack member by email (case-insensitive) first.
+    // If not found, normalize names and try to match by name (strip punctuation/diacritics and lower-case).
+    const enriched = simplified.map(item => {
+      const itemEmail = item.email || '';
+      const itemName = item.name || '';
+
+      // Try email match (fast, exact)
+      let match = slackMembers.find(m => m.email && itemEmail && m.email.toLowerCase() === itemEmail.toLowerCase());
+      let matchType = match ? 'email' : null;
+
+      // If no email match, normalize and match by name
+      if (!match && itemName) {
+        const normItemName = normalizeForMatch(itemName);
+        match = slackMembers.find(m => {
+          const candidateName = (m.name || m.display_name || '');
+          const normCandidate = normalizeForMatch(candidateName);
+          // Exact normalized equality or inclusion (item contained in candidate or vice-versa)
+          return normCandidate && normItemName && (
+            normCandidate === normItemName ||
+            normCandidate.indexOf(normItemName) !== -1 ||
+            normItemName.indexOf(normCandidate) !== -1
+          );
+        });
+        if (match) matchType = 'name';
+      }
+
+      return {
+        email: itemEmail,
+        name: itemName,
+        id: item.id || null,
+        slack_found: !!match,
+        slack_id: match?.id || null,
+        slack_name: match?.name || match?.display_name || null,
+        slack_match_type: matchType,
+      };
+    });
+
+    res.status(200).json(enriched);
+  } catch (error) {
+    console.error('Error processing passed notion data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/sendSlackMemberDM', async (req, res) => {
+  const { slack_id, message } = req.body;
+
+  if (!slack_id || !message) {
+    return res.status(400).json({ error: 'Request body must contain slack_id and message.' });
+  }
+
+  // Try sending message to the user
+  try {
+    // Open message conversation
+    const { channel } = await slack.conversations.open({ users: slack_id });
+
+    // Send message in the channel
+    const request = await slack.chat.postMessage({
+      // channel: channel.id,
+      channel: "U084VM2EEDV",
+      text: message,
+    })
+
+    // Return success response
+    res.status(200).json({ message: 'Message sent successfully.', request });
+  }catch(error){
+    console.error('Error processing passed notion data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+})
+
 export default app;
+export { fetchSlackUsers };
