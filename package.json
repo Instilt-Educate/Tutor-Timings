@@ -6,7 +6,7 @@
     "url": "git+https://github.com/Instilt-Educate/Tutor-Timings.git"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "homepage": ".",
   "main": "api/index.js",
