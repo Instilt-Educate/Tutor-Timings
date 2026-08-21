@@ -77,7 +77,7 @@ app.get('/getRecords', async (req, res) => {
         },
         {
           property: "Certificate Issued",
-          multi_select: { does_not_contain: hour.toString() }
+          multi_select: { does_not_contain: tier }
         },
         {
           property: "Team",
