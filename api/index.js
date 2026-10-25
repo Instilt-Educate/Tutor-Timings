@@ -278,8 +278,15 @@ app.get('/getUnassignedMembers', async (req, res) => {
  */
 app.get('/getActiveBatches', async (req, res) => {
   try {
-    const records = await batchService.getActiveBatchesData();
-    res.status(200).json(records);
+    const batches = await batchService.getActiveBatchesData();
+    res.status(200).json({
+      meta: {
+        generated_at: new Date().toISOString(),
+        batch_count: batches.length,
+        unmatchable_batches: batchService.getUnmatchableBatches(batches),
+      },
+      batches,
+    });
   } catch (error) {
     console.error('Error processing notion data:', error);
     res.status(500).json({ error: 'Internal server error' });
