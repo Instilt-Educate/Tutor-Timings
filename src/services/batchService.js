@@ -3,6 +3,9 @@ import { Batches_Database_ID } from '../config/index.js';
 import { stripEmojis } from '../utils/text.js';
 import { analyzeTiming, slotToMinutes } from '../utils/timing.js';
 
+// Statuses of batches that can take new tutors
+const BATCH_STATUSES = ["Active", "In Crisis", "Tutor Allocation"];
+
 /**
  * Fetch active batches data from Notion
  * @returns {Promise<Array>} - Array of active batch records
@@ -11,20 +14,10 @@ export async function getActiveBatchesData() {
   const allRecords = await queryAllPages({
     database_id: Batches_Database_ID,
     filter: {
-      "or": [
-        {
-          "property": "Status",
-          "select": {
-            "equals": "Active"
-          }
-        },
-        {
-          "property": "Status",
-          "select": {
-            "equals": "In Crisis"
-          }
-        }
-      ]
+      or: BATCH_STATUSES.map(status => ({
+        property: "Status",
+        select: { equals: status },
+      })),
     }
   });
 
