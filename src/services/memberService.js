@@ -1,7 +1,7 @@
 import { notion, queryAllPages } from '../clients/notion.js';
 import { Members_Database_ID, Award_Tiers_Database_ID } from '../config/index.js';
 import { enrichNotionRecordsWithSlack } from './slackService.js';
-import { getActiveBatchesData, matchMemberAvailabilityWithBatches } from './batchService.js';
+import { getActiveBatchesData, getUnmatchableBatches, matchMemberAvailabilityWithBatches } from './batchService.js';
 
 const byName = (a, b) => (a.name > b.name) ? 1 : -1;
 const hasName = record => record.properties.Names.title[0]?.plain_text !== undefined;
@@ -506,7 +506,8 @@ export async function addInterviewStatusOption() {
 }
 
 /**
- * Get unassigned members with Slack data and matching batches
+ * Get unassigned members with Slack data and matching batches.
+ * Batches whose timing couldn't be parsed are listed once in meta.unmatchable_batches.
  */
 export async function getUnassignedMembers() {
   // Step 1: Fetch unassigned members from Notion
@@ -521,12 +522,13 @@ export async function getUnassignedMembers() {
           ],
         },
         {
+          // Batch Status is a text formula (e.g. "🔴 Unassigned"), not a status property
           property: "Batch Status",
-          status: { equals: "Unassigned" },
+          formula: { string: { contains: "Unassigned" } },
         },
         {
           property: "isAdmin",
-          checkbox: { equals: false },
+          formula: { checkbox: { equals: false } },
         },
       ],
     }
@@ -538,7 +540,9 @@ export async function getUnassignedMembers() {
     email: record.properties.Email.email || '',
     team: record.properties.Team.multi_select[0]?.name ?? '',
     cohort: record.properties.Cohort.select?.name,
-    batch_status: record.properties["Batch Status"].status.name || '',
+    batch_status: record.properties["Batch Status"].formula?.string || '',
+    tutor_type: record.properties["Tutor type"]?.select?.name ?? '',
+    languages: (record.properties.Languages?.multi_select || []).map(l => l.name),
     availability: {
       monday: record.properties.Monday.multi_select.map(slot => slot.name) || [],
       tuesday: record.properties.Tuesday.multi_select.map(slot => slot.name) || [],
@@ -557,16 +561,32 @@ export async function getUnassignedMembers() {
   const activeBatches = await getActiveBatchesData();
 
   // Step 4: Match each member with compatible batches
-  return enrichedRecords.map(member => {
-    const original = formattedRecords.find(r => r.id === member.id);
+  const originalsById = new Map(formattedRecords.map(r => [r.id, r]));
+
+  const members = enrichedRecords.map(member => {
+    const original = originalsById.get(member.id);
+    const matchingBatches = matchMemberAvailabilityWithBatches(original?.availability || {}, activeBatches, original?.tutor_type);
 
     return {
       ...member,
       team: original?.team,
       cohort: original?.cohort,
       batch_status: original?.batch_status,
+      tutor_type: original?.tutor_type,
+      languages: original?.languages,
       availability: original?.availability,
-      matching_batches: matchMemberAvailabilityWithBatches(original?.availability || {}, activeBatches),
+      matched_batch_ids: matchingBatches.map(b => b.batch_id),
+      matching_batches: matchingBatches,
     };
   });
+
+  return {
+    meta: {
+      generated_at: new Date().toISOString(),
+      member_count: members.length,
+      active_batch_count: activeBatches.length,
+      unmatchable_batches: getUnmatchableBatches(activeBatches),
+    },
+    members,
+  };
 }
