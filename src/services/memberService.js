@@ -68,7 +68,7 @@ export async function getRecordsByTier(tierParam) {
       formula: { number: { greater_than_or_equal_to: minHours } }
     },
     {
-      property: "Certificates Awarded",
+      property: "Certificate Record",
       relation: { does_not_contain: matchingTier.page_id }
     },
     {
@@ -414,7 +414,7 @@ export async function submitAvailabilityTimes(timeData) {
 
 /**
  * Issue certificates of the given tier to members by linking the tier's page
- * to each member's "Certificates Awarded" relation
+ * to each member's "Certificate Record" relation
  * @param {Array<string>} names - Member names
  * @param {string} tierKey - Award tier key (e.g. "bronze_1")
  * @returns {Promise<Array|null>} - Per-member result entries, or null if the tier key is unknown
@@ -446,7 +446,7 @@ export async function issueCertificates(names, tierKey) {
 
       const page = response.results[0];
       const pageId = page.id;
-      const currentCertificateIds = page.properties['Certificates Awarded'].relation.map(rel => rel.id);
+      const currentCertificateIds = page.properties['Certificate Record'].relation.map(rel => rel.id);
 
       if (!currentCertificateIds.includes(matchingTier.page_id)) {
         currentCertificateIds.push(matchingTier.page_id);
@@ -455,7 +455,7 @@ export async function issueCertificates(names, tierKey) {
       await notion.pages.update({
         page_id: pageId,
         properties: {
-          'Certificates Awarded': {
+          'Certificate Record': {
             relation: currentCertificateIds.map(id => ({ id }))
           }
         }
