@@ -1,5 +1,5 @@
 import { notion, queryAllPages } from '../clients/notion.js';
-import { Members_Database_ID, tierToHours, Award_Tiers_Database_ID } from '../config/index.js';
+import { Members_Database_ID, Award_Tiers_Database_ID } from '../config/index.js';
 import { enrichNotionRecordsWithSlack } from './slackService.js';
 import { getActiveBatchesData, matchMemberAvailabilityWithBatches } from './batchService.js';
 
@@ -192,7 +192,7 @@ export async function getAcceptedMembers() {
  * Get accepted members with email sent over 2 weeks ago
  */
 export async function getAcceptedEmailSentMembers() {
-  let two_weeks = new Date(Date(Date.now() - 12096e5)).toISOString();
+  const two_weeks = new Date(Date.now() - 12096e5).toISOString();
 
   let allRecords = await queryAllPages({
     database_id: Members_Database_ID,
@@ -330,37 +330,43 @@ export async function moveEmailSentToActive(pageIds) {
 
 /**
  * Move accepted records to Acceptance Sent status
- * Note: updates run in the background and are not awaited (matches prior behavior)
+ * Records that are not found, or are no longer "Accepted / Pending Email", are skipped
  */
-export function moveAcceptedToAcceptanceSent(acceptedList) {
-  acceptedList.forEach(async (obj) => {
-    const filterEmail = obj.email;
+export async function moveAcceptedToAcceptanceSent(acceptedList) {
+  await Promise.all(acceptedList.map(async (obj) => {
     const filterResponse = await notion.databases.query({
       database_id: Members_Database_ID,
       filter: {
         property: 'Email',
         rich_text: {
-          equals: filterEmail,
+          equals: obj.email,
         },
       },
     });
-    record = filterResponse.results[0];
+
+    const record = filterResponse.results[0];
+
+    if (!record) {
+      console.log(`Record ${obj.name} not found`);
+      return;
+    }
+
     if (record.properties.Status.status.name !== "Accepted / Pending Email") {
       console.log(`Record ${obj.name} already moved`);
-    } else {
-      const existingPageId = record.id;
-      const updateResponse = await notion.pages.update({
-        page_id: existingPageId,
-        properties: {
-          Status: {
-            status: {
-              name: 'Acceptance Sent',
-            },
+      return;
+    }
+
+    await notion.pages.update({
+      page_id: record.id,
+      properties: {
+        Status: {
+          status: {
+            name: 'Acceptance Sent',
           },
         },
-      });
-    }
-  });
+      },
+    });
+  }));
 }
 
 /**

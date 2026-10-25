@@ -105,10 +105,8 @@ export async function enrichNotionRecordsWithSlack(notionRecords) {
 export async function sendSlackMemberDM(slackId, message) {
   const { channel } = await slack.conversations.open({ users: slackId });
 
-  const request = await slack.chat.postMessage({
-    channel: "U084VM2EEDV",
+  return slack.chat.postMessage({
+    channel: channel.id,
     text: message,
   });
-
-  return request;
 }

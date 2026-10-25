@@ -177,7 +177,11 @@ app.post('/moveEmailSent', async (req, res) => {
  */
 app.post('/moveAccepted', async (req, res) => {
   try {
-    memberService.moveAcceptedToAcceptanceSent(req.body);
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'Request body must be an array of { name, email } objects.' });
+    }
+
+    await memberService.moveAcceptedToAcceptanceSent(req.body);
     res.status(200).json({ message: 'Accepted records moved successfully' });
   } catch (error) {
     console.error('Error moving accepted records:', error);
@@ -189,14 +193,24 @@ app.post('/moveAccepted', async (req, res) => {
  * Submit availability times
  */
 app.post('/submitTimes', async (req, res) => {
-  console.log(req.body);
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const timeData = req.body;
 
-  const updatedPage = await memberService.submitAvailabilityTimes(req.body);
+  if (!timeData?.email || !days.every(day => Array.isArray(timeData[day]))) {
+    return res.status(400).json({ error: 'Request body must contain email and an array of slots for each day of the week.' });
+  }
 
-  if (updatedPage) {
-    res.send(updatedPage);
-  } else {
-    res.status(400).send({ error: "Email not found" });
+  try {
+    const updatedPage = await memberService.submitAvailabilityTimes(timeData);
+
+    if (updatedPage) {
+      res.send(updatedPage);
+    } else {
+      res.status(400).send({ error: "Email not found" });
+    }
+  } catch (error) {
+    console.error('Error submitting availability times:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
